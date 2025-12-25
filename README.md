@@ -1,2 +1,0 @@
-# Demo site under construction.
-
