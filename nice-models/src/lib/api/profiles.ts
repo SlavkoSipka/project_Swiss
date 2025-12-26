@@ -1,4 +1,13 @@
+// Use browser client for both server and client components
+// Browser client works in both environments (server and browser)
+// Note: For RLS policies that depend on cookies, server components should use server client
+// But for now, we'll use browser client to avoid import issues
 import { createClient } from '@/lib/supabase/client'
+
+// Helper to get the client
+function getSupabaseClient() {
+  return createClient()
+}
 
 export interface Profile {
   id: string
@@ -17,12 +26,20 @@ export interface ModelDetails {
   id: string
   location_city: string | null
   location_country: string | null
+  postal_code: string | null
+  address: string | null
+  phone_number: string | null
   bio: string | null
   height: number | null
+  weight: number | null
   age: number | null
-  phone_number: string | null
   services: string[] | null
   price_per_hour: number | null
+  price_per_night: number | null
+  speaks_languages: string[] | null // Languages as array
+  working_hours: string | null
+  working_hours_type: 'custom' | 'same' | '24/7' | null
+  custom_schedule: any | null // JSONB for custom schedule
 }
 
 export interface Photo {
@@ -66,7 +83,7 @@ export interface SearchFilters {
  * Fetch featured/top models for homepage
  */
 export async function getFeaturedProfiles(limit: number = 4) {
-  const supabase = createClient()
+  const supabase = getSupabaseClient()
 
   const { data, error } = await supabase
     .from('profiles')
@@ -92,7 +109,7 @@ export async function getFeaturedProfiles(limit: number = 4) {
  * Search profiles with filters
  */
 export async function searchProfiles(filters: SearchFilters, page: number = 1, pageSize: number = 12) {
-  const supabase = createClient()
+  const supabase = getSupabaseClient()
   const offset = (page - 1) * pageSize
 
   let query = supabase
@@ -156,7 +173,7 @@ export async function searchProfiles(filters: SearchFilters, page: number = 1, p
  * Get single profile by ID with all details
  */
 export async function getProfileById(id: string) {
-  const supabase = createClient()
+  const supabase = getSupabaseClient()
 
   try {
     // First, try to get basic profile
@@ -197,18 +214,21 @@ export async function getProfileById(id: string) {
       .eq('model_id', id)
       .eq('is_approved', true)
 
-    // Get languages
-    const { data: languages } = await supabase
-      .from('languages')
-      .select('*')
-      .eq('model_id', id)
+    // Get languages from model_details.speaks_languages array
+    // Languages are now stored as text[] array in model_details
+    const languages = modelDetails?.speaks_languages?.map((lang: string) => ({
+      language_code: lang,
+      language_name: lang,
+      proficiency_level: 'fluent' // Default, since we don't store proficiency in array
+    })) || []
 
-    // Get availability
-    const { data: availability } = await supabase
-      .from('availability')
-      .select('*')
-      .eq('model_id', id)
-      .order('day_of_week')
+    // Get availability from model_details (working_hours, working_hours_type, custom_schedule)
+    // Availability is now stored in model_details instead of separate table
+    const availability = modelDetails?.working_hours_type === 'custom' && modelDetails?.custom_schedule
+      ? modelDetails.custom_schedule
+      : modelDetails?.working_hours
+        ? [{ working_hours: modelDetails.working_hours, type: modelDetails.working_hours_type }]
+        : []
 
     return {
       ...profile,
@@ -236,7 +256,7 @@ export async function getProfileById(id: string) {
  * Get similar profiles (same city)
  */
 export async function getSimilarProfiles(profileId: string, city: string, limit: number = 4) {
-  const supabase = createClient()
+  const supabase = getSupabaseClient()
 
   const { data, error } = await supabase
     .from('profiles')
@@ -262,7 +282,7 @@ export async function getSimilarProfiles(profileId: string, city: string, limit:
  * Calculate average rating for a model
  */
 export async function getModelRating(modelId: string) {
-  const supabase = createClient()
+  const supabase = getSupabaseClient()
 
   const { data, error } = await supabase
     .from('reviews')
@@ -284,11 +304,93 @@ export async function getModelRating(modelId: string) {
 }
 
 /**
+ * Get all profiles (models) - for homepage display
+ */
+export async function getAllProfiles(page: number = 1, pageSize: number = 24) {
+  return searchProfiles({}, page, pageSize)
+}
+
+/**
+ * Get cities/areas with profile counts
+ */
+export async function getCitiesWithCounts() {
+  const supabase = getSupabaseClient()
+
+  // Get all model profiles with their cities
+  const { data, error } = await supabase
+    .from('profiles')
+    .select(`
+      id,
+      model_details!inner(location_city)
+    `)
+    .eq('role', 'model')
+    .not('model_details.location_city', 'is', null)
+
+  if (error) {
+    console.error('Error fetching cities:', error)
+    // Fallback: try without inner join
+    const { data: fallbackData } = await supabase
+      .from('model_details')
+      .select('location_city')
+      .not('location_city', 'is', null)
+    
+    if (!fallbackData) return []
+    
+    const cityCounts: Record<string, number> = {}
+    fallbackData.forEach((detail: any) => {
+      if (detail.location_city) {
+        cityCounts[detail.location_city] = (cityCounts[detail.location_city] || 0) + 1
+      }
+    })
+    
+    return Object.entries(cityCounts)
+      .map(([city, count]) => ({ city, count }))
+      .sort((a, b) => b.count - a.count)
+  }
+
+  // Count profiles per city
+  const cityCounts: Record<string, number> = {}
+  data?.forEach((item: any) => {
+    const city = item.model_details?.location_city
+    if (city) {
+      cityCounts[city] = (cityCounts[city] || 0) + 1
+    }
+  })
+
+  // Convert to array and sort
+  const cities = Object.entries(cityCounts)
+    .map(([city, count]) => ({ city, count }))
+    .sort((a, b) => b.count - a.count)
+
+  return cities
+}
+
+/**
+ * Get total profile count
+ */
+export async function getTotalProfileCount() {
+  const supabase = getSupabaseClient()
+
+  const { count, error } = await supabase
+    .from('profiles')
+    .select('*', { count: 'exact', head: true })
+    .eq('role', 'model')
+
+  if (error) {
+    console.error('Error fetching total count:', error)
+    return 0
+  }
+
+  return count || 0
+}
+
+/**
  * Get primary photo for a model
  */
 export function getPrimaryPhoto(photos: Photo[] | undefined): string {
   if (!photos || photos.length === 0) {
-    return 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&h=500&fit=crop'
+    // Default placeholder image - using a neutral placeholder
+    return 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&h=600&fit=crop'
   }
 
   const primary = photos.find(p => p.is_primary)

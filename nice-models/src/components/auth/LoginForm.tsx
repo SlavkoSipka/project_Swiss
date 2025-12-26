@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { Mail, Lock, Eye, EyeOff } from 'lucide-react'
+import Link from 'next/link'
 
 export default function LoginForm() {
   const router = useRouter()
@@ -38,76 +38,74 @@ export default function LoginForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-3">
       {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+        <div className="bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded text-xs">
           {error}
         </div>
       )}
 
       {/* Email */}
       <div>
-        <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+        <label htmlFor="email" className="block text-xs font-medium text-gray-700 mb-1 pl-1">
           Email Address
         </label>
-        <div className="relative">
-          <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-          <input
-            id="email"
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
-            placeholder="you@example.com"
-          />
-        </div>
+        <input
+          id="email"
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          required
+          className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+          placeholder="you@example.com"
+        />
       </div>
 
       {/* Password */}
       <div>
-        <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
+        <label htmlFor="password" className="block text-xs font-medium text-gray-700 mb-1 pl-1">
           Password
         </label>
         <div className="relative">
-          <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
           <input
             id="password"
             type={showPassword ? 'text' : 'password'}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
-            className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
-            placeholder="••••••••"
+            autoComplete="current-password"
+            className="w-full px-3 pr-14 py-2 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+            placeholder="Enter password"
           />
           <button
             type="button"
-            onClick={() => setShowPassword(!showPassword)}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+            onClick={(e) => {
+              e.preventDefault()
+              e.stopPropagation()
+              setShowPassword((prev) => !prev)
+            }}
+            className="absolute right-2 top-1/2 -translate-y-1/2 px-2 py-0.5 text-xs font-medium text-pink-600 hover:text-pink-700 transition-colors cursor-pointer z-10"
+            tabIndex={-1}
           >
-            {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+            {showPassword ? 'Hide' : 'Show'}
           </button>
         </div>
       </div>
 
-      {/* Remember Me */}
-      <div className="flex items-center justify-between">
-        <label className="flex items-center cursor-pointer">
-          <input
-            type="checkbox"
-            className="w-4 h-4 text-pink-600 border-gray-300 rounded focus:ring-pink-500"
-          />
-          <span className="ml-2 text-sm text-gray-700">Remember me</span>
-        </label>
+      {/* Forgot Password */}
+      <div className="text-right pt-1">
+        <a href="/forgot-password" className="text-xs text-pink-600 hover:underline">
+          Forgot password?
+        </a>
       </div>
 
       {/* Submit Button */}
       <button
         type="submit"
         disabled={loading}
-        className="w-full bg-gradient-to-r from-pink-500 to-purple-600 text-white py-3 rounded-lg font-semibold hover:from-pink-600 hover:to-purple-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+        className="w-full bg-pink-600 text-white py-2.5 rounded font-semibold hover:bg-pink-700 transition disabled:opacity-50 disabled:cursor-not-allowed text-sm mt-4"
       >
-        {loading ? 'Logging in...' : 'Login'}
+        {loading ? 'Logging in...' : 'LOGIN'}
       </button>
     </form>
   )

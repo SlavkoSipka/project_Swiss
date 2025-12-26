@@ -82,59 +82,46 @@ export default async function SimilarProfiles({ currentProfileId, city }: Simila
         Similar Models in <span className="text-pink-600">{city}</span>
       </h2>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-5 md:grid-cols-6 lg:grid-cols-7 xl:grid-cols-8 2xl:grid-cols-9">
         {(profiles.length > 0 ? profiles : mockProfiles).map((profile) => (
           <Link
             key={profile.id}
             href={`/profile/${profile.id}`}
-            className="group bg-white rounded-2xl shadow-md hover:shadow-2xl transition-all duration-300 overflow-hidden hover:-translate-y-2"
+            className="group bg-white rounded overflow-hidden shadow-sm hover:shadow-md transition-all duration-300 m-3"
           >
             {/* Image */}
-            <div className="relative h-64 overflow-hidden bg-gray-200">
+            <div className="relative w-full aspect-[3/4] overflow-hidden bg-gray-200">
               <Image
                 src={'image' in profile ? profile.image : getPrimaryPhoto(profile.photos)}
                 alt={'name' in profile ? profile.name : profile.full_name || 'Model'}
                 fill
-                className="object-cover group-hover:scale-110 transition-transform duration-500"
+                className="object-cover group-hover:scale-105 transition-transform duration-300"
               />
               {('verified' in profile ? profile.verified : profile.is_verified) && (
-                <div className="absolute top-3 right-3 bg-blue-500 text-white px-2 py-1 rounded-full text-xs flex items-center">
-                  <CheckCircle className="w-3 h-3 mr-1" />
+                <div className="absolute top-1 right-1 bg-blue-500 text-white px-1 py-0.5 rounded text-[9px] flex items-center">
+                  <CheckCircle className="w-2.5 h-2.5 mr-0.5" />
                   Verified
                 </div>
               )}
             </div>
 
             {/* Content */}
-            <div className="p-4">
-              <div className="flex items-start justify-between mb-2">
-                <div>
-                  <h3 className="text-xl font-bold text-gray-800 group-hover:text-pink-600 transition">
-                    {'name' in profile ? profile.name : profile.full_name || 'Model'}, {'age' in profile ? profile.age : profile.model_details?.age || '?'}
-                  </h3>
-                  <p className="text-sm text-gray-500 flex items-center mt-1">
-                    <MapPin className="w-4 h-4 mr-1" />
-                    {'city' in profile ? profile.city : profile.model_details?.location_city || 'Unknown'}
-                  </p>
+            <div className="p-1.5">
+              <h3 className="font-semibold text-gray-800 text-[12px] truncate">
+                {'name' in profile ? profile.name : profile.full_name || 'Model'}
+              </h3>
+              <p className="text-[10px] text-gray-600 mt-0.5 truncate flex items-center">
+                <MapPin className="w-3 h-3 mr-0.5" />
+                {'city' in profile ? profile.city : profile.model_details?.location_city || 'Unknown'}
+              </p>
+              {('rating' in profile ? profile.rating : (profile as any).rating) && (
+                <div className="flex items-center text-[10px] text-gray-600 mt-0.5">
+                  <Star className="w-3 h-3 text-yellow-400 fill-yellow-400 mr-0.5" />
+                  <span className="font-semibold">
+                    {'rating' in profile ? profile.rating : (profile as any).rating || '0.0'}
+                  </span>
                 </div>
-                <div className="text-right">
-                  <div className="text-lg font-bold text-pink-600">
-                    ${'price' in profile ? profile.price : profile.model_details?.price_per_hour || 0}
-                  </div>
-                  <div className="text-xs text-gray-500">per hour</div>
-                </div>
-              </div>
-
-              {/* Rating */}
-              <div className="flex items-center text-sm text-gray-600">
-                <Star className="w-4 h-4 text-yellow-400 fill-yellow-400 mr-1" />
-                <span className="font-semibold">
-                  {'rating' in profile ? profile.rating : (profile as any).rating || '0.0'}
-                </span>
-                <span className="ml-1">
-                  ({'reviews' in profile ? profile.reviews : (profile as any).reviewCount || 0})
-                </span>
-              </div>
+              )}
             </div>
           </Link>
         ))}

@@ -30,7 +30,7 @@ export default function StatsSection() {
 
   return (
     <section className="bg-gradient-to-br from-gray-50 to-gray-100 py-16 px-4">
-      <div className="container mx-auto">
+      <div className="mx-auto max-w-full">
         <h2 className="text-3xl font-bold text-center mb-12">
           Trusted by <span className="text-pink-600">Thousands</span>
         </h2>

@@ -23,7 +23,7 @@ export default async function FeaturedProfiles() {
   if (profiles.length === 0) {
     return (
       <section className="py-16 px-4">
-        <div className="container mx-auto">
+        <div className="mx-auto max-w-full">
           <h2 className="text-3xl font-bold text-center mb-10">
             Featured <span className="text-pink-600">Models</span>
           </h2>
@@ -54,55 +54,44 @@ export default async function FeaturedProfiles() {
           </Link>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-5 md:grid-cols-6 lg:grid-cols-7 xl:grid-cols-8 2xl:grid-cols-9">
           {profilesWithRatings.map((profile) => (
             <Link
               key={profile.id}
               href={`/profile/${profile.id}`}
-              className="group bg-white rounded-2xl shadow-md hover:shadow-2xl transition-all duration-300 overflow-hidden hover:-translate-y-2"
+              className="group bg-white rounded overflow-hidden shadow-sm hover:shadow-md transition-all duration-300 m-3"
             >
               {/* Image */}
-              <div className="relative h-64 overflow-hidden bg-gray-200">
+              <div className="relative w-full aspect-[3/4] overflow-hidden bg-gray-200">
                 <Image
                   src={getPrimaryPhoto(profile.photos)}
                   alt={profile.full_name || 'Model'}
                   fill
-                  className="object-cover group-hover:scale-110 transition-transform duration-500"
+                  className="object-cover group-hover:scale-105 transition-transform duration-300"
                 />
                 {profile.is_verified && (
-                  <div className="absolute top-3 right-3 bg-blue-500 text-white px-2 py-1 rounded-full text-xs flex items-center">
-                    <CheckCircle className="w-3 h-3 mr-1" />
+                  <div className="absolute top-1 right-1 bg-blue-500 text-white px-1 py-0.5 rounded text-[9px] flex items-center">
+                    <CheckCircle className="w-2.5 h-2.5 mr-0.5" />
                     Verified
                   </div>
                 )}
               </div>
 
               {/* Content */}
-              <div className="p-4">
-                <div className="flex items-start justify-between mb-2">
-                  <div>
-                    <h3 className="text-xl font-bold text-gray-800 group-hover:text-pink-600 transition">
-                      {profile.full_name || 'Model'}, {profile.model_details?.age || '?'}
-                    </h3>
-                    <p className="text-sm text-gray-500 flex items-center mt-1">
-                      <MapPin className="w-4 h-4 mr-1" />
-                      {profile.model_details?.location_city || 'Unknown'}
-                    </p>
+              <div className="p-1.5">
+                <h3 className="font-semibold text-gray-800 text-[12px] truncate">
+                  {profile.full_name || 'Model'}
+                </h3>
+                <p className="text-[10px] text-gray-600 mt-0.5 truncate flex items-center">
+                  <MapPin className="w-3 h-3 mr-0.5" />
+                  {profile.model_details?.location_city || 'Unknown'}
+                </p>
+                {profile.rating && (
+                  <div className="flex items-center text-[10px] text-gray-600 mt-0.5">
+                    <Star className="w-3 h-3 text-yellow-400 fill-yellow-400 mr-0.5" />
+                    <span className="font-semibold">{profile.rating || '0.0'}</span>
                   </div>
-                  <div className="text-right">
-                    <div className="text-lg font-bold text-pink-600">
-                      ${profile.model_details?.price_per_hour || 0}
-                    </div>
-                    <div className="text-xs text-gray-500">per hour</div>
-                  </div>
-                </div>
-
-                {/* Rating */}
-                <div className="flex items-center text-sm text-gray-600">
-                  <Star className="w-4 h-4 text-yellow-400 fill-yellow-400 mr-1" />
-                  <span className="font-semibold">{profile.rating || '0.0'}</span>
-                  <span className="ml-1">({profile.reviewCount || 0} reviews)</span>
-                </div>
+                )}
               </div>
             </Link>
           ))}

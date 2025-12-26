@@ -33,8 +33,24 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
   // Fetch profile from Supabase
   const profileData = await getProfileById(id)
   
-  if (!profileData || !profileData.model_details) {
+  if (!profileData) {
     notFound()
+  }
+  
+  // Ako korisnik nije model, prikaži osnovni profil
+  if (!profileData.model_details) {
+    return (
+      <div className="min-h-screen bg-gray-50 py-8">
+        <div className="mx-auto px-4 max-w-full">
+          <div className="bg-white rounded-2xl shadow-md p-6">
+            <h1 className="text-3xl font-bold mb-4">
+              {profileData.full_name || profileData.username || 'User'}
+            </h1>
+            <p className="text-gray-600">This user is not a model.</p>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   // Get rating
@@ -66,7 +82,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
     online: false, // TODO: implement online status
     phone: profileData.model_details.phone_number || '',
     height: profileData.model_details.height || 0,
-    languages: profileData.languages?.map(l => l.language_name) || [],
+    languages: profileData.model_details?.speaks_languages || [],
     bio: profileData.model_details.bio || 'No bio available.',
     services: profileData.model_details.services || [],
     availability,
@@ -80,22 +96,22 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="container mx-auto px-4">
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50/30 to-white py-8">
+      <div className="mx-auto px-4 max-w-full">
         {/* Breadcrumb */}
-        <div className="mb-6 text-sm text-gray-600">
-          <Link href="/" className="hover:text-pink-600">Home</Link>
-          <span className="mx-2">/</span>
-          <Link href="/search" className="hover:text-pink-600">Search</Link>
-          <span className="mx-2">/</span>
-          <span className="text-gray-800">{profile.name}</span>
+        <div className="mb-6 text-sm text-gray-600 bg-white/60 backdrop-blur-sm rounded-xl px-4 py-2 inline-block shadow-soft">
+          <Link href="/" className="hover:text-pink-600 font-medium transition-colors">Home</Link>
+          <span className="mx-2 text-gray-400">/</span>
+          <Link href="/search" className="hover:text-pink-600 font-medium transition-colors">Search</Link>
+          <span className="mx-2 text-gray-400">/</span>
+          <span className="text-gray-900 font-semibold">{profile.name}</span>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-6">
             {/* Header Card */}
-            <div className="bg-white rounded-2xl shadow-md p-6">
+            <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-large p-8 border border-gray-100 animate-fade-in">
               <div className="flex items-start justify-between mb-4">
                 <div className="flex-1">
                   <div className="flex items-center gap-3 mb-2">
@@ -103,13 +119,13 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
                       {profile.name}, {profile.age}
                     </h1>
                     {profile.verified && (
-                      <div className="bg-blue-500 text-white px-3 py-1 rounded-full text-sm flex items-center">
-                        <CheckCircle className="w-4 h-4 mr-1" />
+                      <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white px-4 py-1.5 rounded-full text-sm flex items-center shadow-lg">
+                        <CheckCircle className="w-4 h-4 mr-1.5" />
                         Verified
                       </div>
                     )}
                     {profile.online && (
-                      <div className="bg-green-500 text-white px-3 py-1 rounded-full text-sm flex items-center">
+                      <div className="bg-gradient-to-r from-green-500 to-green-600 text-white px-4 py-1.5 rounded-full text-sm flex items-center shadow-lg">
                         <div className="w-2 h-2 bg-white rounded-full mr-2 animate-pulse" />
                         Online Now
                       </div>
@@ -130,15 +146,15 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
                   </div>
                 </div>
 
-                <div className="flex gap-2">
-                  <button className="p-3 bg-gray-100 hover:bg-gray-200 rounded-full transition">
-                    <Heart className="w-5 h-5 text-pink-500" />
+                <div className="flex gap-3">
+                  <button className="p-3 bg-gradient-to-br from-pink-50 to-pink-100 hover:from-pink-100 hover:to-pink-200 rounded-xl transition-all shadow-soft hover:shadow-md hover:scale-110 border border-pink-200">
+                    <Heart className="w-5 h-5 text-pink-600" />
                   </button>
-                  <button className="p-3 bg-gray-100 hover:bg-gray-200 rounded-full transition">
-                    <Share2 className="w-5 h-5 text-gray-600" />
+                  <button className="p-3 bg-gradient-to-br from-gray-50 to-gray-100 hover:from-gray-100 hover:to-gray-200 rounded-xl transition-all shadow-soft hover:shadow-md hover:scale-110 border border-gray-200">
+                    <Share2 className="w-5 h-5 text-gray-700" />
                   </button>
-                  <button className="p-3 bg-gray-100 hover:bg-gray-200 rounded-full transition">
-                    <Flag className="w-5 h-5 text-gray-600" />
+                  <button className="p-3 bg-gradient-to-br from-gray-50 to-gray-100 hover:from-gray-100 hover:to-gray-200 rounded-xl transition-all shadow-soft hover:shadow-md hover:scale-110 border border-gray-200">
+                    <Flag className="w-5 h-5 text-gray-700" />
                   </button>
                 </div>
               </div>
@@ -174,37 +190,37 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
             <PhotoGallery photos={profile.photos} />
 
             {/* About */}
-            <div className="bg-white rounded-2xl shadow-md p-6">
-              <h2 className="text-2xl font-bold mb-4">About Me</h2>
-              <p className="text-gray-700 whitespace-pre-line leading-relaxed">
+            <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-large p-8 border border-gray-100">
+              <h2 className="text-2xl font-bold mb-6 bg-gradient-to-r from-pink-600 to-purple-600 bg-clip-text text-transparent">About Me</h2>
+              <p className="text-gray-700 whitespace-pre-line leading-relaxed text-lg">
                 {profile.bio}
               </p>
             </div>
 
             {/* Services */}
-            <div className="bg-white rounded-2xl shadow-md p-6">
-              <h2 className="text-2xl font-bold mb-4">Services Offered</h2>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+            <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-large p-8 border border-gray-100">
+              <h2 className="text-2xl font-bold mb-6 bg-gradient-to-r from-pink-600 to-purple-600 bg-clip-text text-transparent">Services Offered</h2>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                 {profile.services.map((service) => (
                   <div
                     key={service}
-                    className="flex items-center p-3 bg-pink-50 rounded-lg"
+                    className="flex items-center p-4 bg-gradient-to-br from-pink-50 to-pink-100 rounded-xl border border-pink-200 shadow-soft hover:shadow-md transition-all"
                   >
-                    <CheckCircle className="w-5 h-5 text-pink-500 mr-2 flex-shrink-0" />
-                    <span className="text-gray-700 text-sm">{service}</span>
+                    <CheckCircle className="w-5 h-5 text-pink-600 mr-3 flex-shrink-0" />
+                    <span className="text-gray-800 text-sm font-medium">{service}</span>
                   </div>
                 ))}
               </div>
             </div>
 
             {/* Languages */}
-            <div className="bg-white rounded-2xl shadow-md p-6">
-              <h2 className="text-2xl font-bold mb-4">Languages</h2>
+            <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-large p-8 border border-gray-100">
+              <h2 className="text-2xl font-bold mb-6 bg-gradient-to-r from-pink-600 to-purple-600 bg-clip-text text-transparent">Languages</h2>
               <div className="flex flex-wrap gap-3">
                 {profile.languages.map((lang) => (
                   <div
                     key={lang}
-                    className="px-4 py-2 bg-purple-100 text-purple-700 rounded-full font-semibold"
+                    className="px-5 py-2.5 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-full font-bold shadow-md hover:shadow-lg hover:scale-105 transition-all"
                   >
                     {lang}
                   </div>
@@ -219,12 +235,12 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
           {/* Sidebar */}
           <div className="lg:col-span-1 space-y-6">
             {/* Contact Card */}
-            <div className="bg-white rounded-2xl shadow-md p-6 sticky top-20">
+            <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-large p-8 border border-gray-100 sticky top-20 animate-fade-in">
               <div className="mb-6">
-                <div className="text-3xl font-bold text-pink-600 mb-1">
+                <div className="text-4xl font-bold bg-gradient-to-r from-pink-600 to-purple-600 bg-clip-text text-transparent mb-2">
                   ${profile.price}
                 </div>
-                <div className="text-gray-600">per hour</div>
+                <div className="text-gray-600 font-medium">per hour</div>
               </div>
 
               <ContactButtons phone={profile.phone} profileId={id} />
@@ -244,16 +260,18 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
             </div>
 
             {/* Availability */}
-            <div className="bg-white rounded-2xl shadow-md p-6">
-              <h3 className="font-semibold mb-4 flex items-center">
-                <Clock className="w-5 h-5 mr-2 text-pink-500" />
+            <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-large p-8 border border-gray-100">
+              <h3 className="font-bold text-lg mb-6 flex items-center text-gray-900">
+                <div className="bg-pink-500 rounded-lg p-2 mr-3">
+                  <Clock className="w-5 h-5 text-white" />
+                </div>
                 Availability
               </h3>
-              <div className="space-y-2 text-sm">
+              <div className="space-y-3">
                 {profile.availability.map((slot) => (
-                  <div key={slot.day} className="flex justify-between py-2 border-b last:border-0">
-                    <span className="text-gray-600">{slot.day}</span>
-                    <span className={`font-semibold ${slot.hours === 'Closed' ? 'text-red-500' : 'text-green-600'}`}>
+                  <div key={slot.day} className="flex justify-between items-center py-3 px-4 bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl border border-gray-200">
+                    <span className="text-gray-700 font-medium">{slot.day}</span>
+                    <span className={`font-bold px-3 py-1 rounded-lg ${slot.hours === 'Closed' ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>
                       {slot.hours}
                     </span>
                   </div>
@@ -262,9 +280,12 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
             </div>
 
             {/* Safety Notice */}
-            <div className="bg-yellow-50 border border-yellow-200 rounded-2xl p-6">
-              <h3 className="font-semibold mb-2 text-yellow-800">Safety First</h3>
-              <p className="text-sm text-yellow-700">
+            <div className="bg-gradient-to-br from-yellow-50 to-orange-50 border-2 border-yellow-300 rounded-2xl p-6 shadow-soft">
+              <h3 className="font-bold mb-3 text-yellow-900 flex items-center">
+                <span className="text-2xl mr-2">🛡️</span>
+                Safety First
+              </h3>
+              <p className="text-sm text-yellow-800 leading-relaxed">
                 Always meet in public first. Never send money in advance. Report suspicious behavior.
               </p>
             </div>

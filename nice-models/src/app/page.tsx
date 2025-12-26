@@ -1,154 +1,215 @@
+'use client'
+
 import Link from 'next/link'
-import { Search, MapPin, Users, Star, TrendingUp, Clock } from 'lucide-react'
-import SearchBar from '@/components/home/SearchBar'
-import CategoryCard from '@/components/home/CategoryCard'
-import FeaturedProfiles from '@/components/home/FeaturedProfiles'
-import StatsSection from '@/components/home/StatsSection'
+import Image from 'next/image'
+import { useState, useEffect } from 'react'
+import { getAllProfiles, getPrimaryPhoto, type Profile } from '@/lib/api/profiles'
+import AreasSidebar from '@/components/home/AreasSidebar'
+import StoriesSection from '@/components/home/StoriesSection'
+import FilterBar from '@/components/home/FilterBar'
+import RightSidebar from '@/components/home/RightSidebar'
+import { Video } from 'lucide-react'
 
 export default function HomePage() {
+  const [profiles, setProfiles] = useState<Profile[]>([])
+  const [loading, setLoading] = useState(true)
+  const [page, setPage] = useState(1)
+  const [total, setTotal] = useState(0)
+  const [failedImages, setFailedImages] = useState<Set<string>>(new Set())
+  const [filters, setFilters] = useState<any>({})
+  const pageSize = 24
+
+  useEffect(() => {
+    async function fetchProfiles() {
+      setLoading(true)
+      const result = await getAllProfiles(page, pageSize)
+      setProfiles(result.profiles)
+      setTotal(result.total)
+      setLoading(false)
+    }
+
+    fetchProfiles()
+  }, [page, filters])
+
+  // Default image for profiles without photos
+  const defaultImage = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&h=600&fit=crop'
+
+  const totalPages = Math.ceil(total / pageSize)
+
   return (
-    <div className="min-h-screen">
-      {/* Hero Section */}
-      <section className="bg-gradient-to-br from-purple-900 via-pink-800 to-purple-900 text-white py-20 px-4">
-        <div className="container mx-auto text-center">
-          <h1 className="text-5xl md:text-6xl font-bold mb-6 animate-fade-in">
-            Find Your Perfect
-            <span className="block bg-gradient-to-r from-pink-300 to-purple-300 bg-clip-text text-transparent">
-              Companion Tonight
-            </span>
-          </h1>
-          <p className="text-xl md:text-2xl text-gray-200 mb-8 max-w-3xl mx-auto">
-            The leading escort portal in Switzerland. Over 1,200+ verified models available 24/7.
-          </p>
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50/30 to-white">
+      {/* Main Content Container */}
+      <div className="mx-auto px-4 py-6 max-w-full">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          {/* Left Sidebar - Areas */}
+          <div className="lg:col-span-2">
+            <AreasSidebar />
+          </div>
 
-          {/* Search Bar */}
-          <SearchBar />
+          {/* Main Content Area */}
+          <div className="lg:col-span-7">
+            {/* Stories Section */}
+            <StoriesSection />
 
-          {/* Quick Stats */}
-          <div className="mt-12 grid grid-cols-2 md:grid-cols-4 gap-6 max-w-4xl mx-auto">
-            <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4">
-              <Users className="w-8 h-8 mx-auto mb-2 text-pink-300" />
-              <div className="text-2xl font-bold">1,292</div>
-              <div className="text-sm text-gray-300">Online Now</div>
+            {/* Filter Bar */}
+            <FilterBar onFilterChange={setFilters} />
+
+            {/* Results Header */}
+            <div className="mb-6 bg-white/80 backdrop-blur-sm rounded-2xl p-4 shadow-soft border border-gray-100">
+              <p className="text-sm text-gray-700">
+                Showing <span className="font-bold text-pink-600">{profiles.length}</span> of{' '}
+                <span className="font-bold text-gray-900">{total}</span> results
+              </p>
             </div>
-            <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4">
-              <Star className="w-8 h-8 mx-auto mb-2 text-pink-300" />
-              <div className="text-2xl font-bold">100%</div>
-              <div className="text-sm text-gray-300">Verified</div>
-            </div>
-            <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4">
-              <MapPin className="w-8 h-8 mx-auto mb-2 text-pink-300" />
-              <div className="text-2xl font-bold">50+</div>
-              <div className="text-sm text-gray-300">Cities</div>
-            </div>
-            <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4">
-              <Clock className="w-8 h-8 mx-auto mb-2 text-pink-300" />
-              <div className="text-2xl font-bold">24/7</div>
-              <div className="text-sm text-gray-300">Available</div>
-            </div>
+
+            {/* Loading State */}
+            {loading && (
+              <div className="text-center py-16">
+                <div className="inline-block animate-spin rounded-full h-16 w-16 border-4 border-pink-200 border-t-pink-600 shadow-lg"></div>
+                <p className="mt-6 text-gray-600 font-medium">Loading profiles...</p>
+              </div>
+            )}
+
+            {/* Profiles Grid */}
+            {!loading && (
+              <>
+                {profiles.length === 0 ? (
+                  <div className="text-center py-12">
+                    <p className="text-xl text-gray-600">No profiles found.</p>
+                  </div>
+                ) : (
+                  <>
+                    <div className="grid grid-cols-5 md:grid-cols-6 lg:grid-cols-7 xl:grid-cols-8 2xl:grid-cols-9 mb-4">
+                      {profiles.map((profile) => {
+                        let photoUrl = profile.photos && profile.photos.length > 0 
+                          ? getPrimaryPhoto(profile.photos) 
+                          : defaultImage
+                        
+                        // Use default image if this image previously failed to load
+                        if (failedImages.has(profile.id)) {
+                          photoUrl = defaultImage
+                        }
+
+                        // Get short description (slogan or bio excerpt)
+                        const shortDesc = profile.model_details?.bio 
+                          ? profile.model_details.bio.length > 40 
+                            ? profile.model_details.bio.substring(0, 40) + '...'
+                            : profile.model_details.bio
+                          : null
+                        
+                        return (
+                          <Link
+                            key={profile.id}
+                            href={`/profile/${profile.id}`}
+                            className="group bg-white rounded-2xl overflow-hidden shadow-soft hover:shadow-large transition-all duration-300 m-2 border border-gray-100 card-hover"
+                          >
+                            {/* Image Container */}
+                            <div className="relative w-full aspect-[3/4] overflow-hidden bg-gray-200">
+                              <img
+                                src={photoUrl}
+                                alt={profile.full_name || profile.username || 'Model'}
+                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                onError={(e) => {
+                                  // Fallback to default image if loading fails
+                                  const target = e.target as HTMLImageElement
+                                  if (target.src !== defaultImage) {
+                                    target.src = defaultImage
+                                  }
+                                  setFailedImages(prev => new Set(prev).add(profile.id))
+                                }}
+                              />
+                              
+                              {/* NEW Badge */}
+                              {profile.created_at && (() => {
+                                const createdAt = new Date(profile.created_at)
+                                const daysSinceCreation = (Date.now() - createdAt.getTime()) / (1000 * 60 * 60 * 24)
+                                if (daysSinceCreation < 7) {
+                                  return (
+                                    <div className="absolute top-2 left-2 bg-gradient-to-r from-pink-500 to-purple-600 text-white px-2 py-1 rounded-full text-[10px] font-bold shadow-lg animate-pulse-glow">
+                                      NEW
+                                    </div>
+                                  )
+                                }
+                                return null
+                              })()}
+
+                              {/* Video/Chat Icon - bottom right (always visible like on image) */}
+                              <div className="absolute bottom-2 right-2">
+                                <div className="bg-gradient-to-r from-pink-500 to-purple-600 rounded-full p-1.5 shadow-lg group-hover:scale-110 transition-transform">
+                                  <Video className="w-3 h-3 text-white" />
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Profile Info */}
+                            <div className="p-2.5 bg-gradient-to-b from-white to-gray-50">
+                              <h3 className="font-bold text-gray-900 text-[13px] truncate group-hover:text-pink-600 transition-colors">
+                                {profile.full_name || profile.username || 'Model'}
+                              </h3>
+                              <p className="text-[11px] text-gray-600 mt-1 truncate flex items-center">
+                                <span className="w-1 h-1 bg-pink-500 rounded-full mr-1.5"></span>
+                                {profile.model_details?.location_city || 'Unknown'}
+                              </p>
+                              {shortDesc && (
+                                <p className="text-[10px] text-gray-500 mt-1 line-clamp-1">
+                                  {shortDesc}
+                                </p>
+                              )}
+                            </div>
+                          </Link>
+                        )
+                      })}
+                    </div>
+
+                    {/* Pagination */}
+                    {totalPages > 1 && (
+                      <div className="flex justify-center items-center gap-2 mt-8">
+                        <button
+                          onClick={() => setPage(p => Math.max(1, p - 1))}
+                          disabled={page === 1}
+                          className="px-4 py-2 border-2 border-gray-200 rounded-xl text-sm font-semibold hover:bg-gradient-to-r hover:from-pink-50 hover:to-purple-50 hover:border-pink-300 transition-all disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-white shadow-soft"
+                        >
+                          ←
+                        </button>
+                        
+                        {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                          const pageNum = i + 1
+                          return (
+                            <button
+                              key={pageNum}
+                              onClick={() => setPage(pageNum)}
+                              className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all shadow-soft ${
+                                page === pageNum
+                                  ? 'bg-gradient-to-r from-pink-600 to-purple-600 text-white shadow-glow scale-110'
+                                  : 'border-2 border-gray-200 hover:bg-gradient-to-r hover:from-pink-50 hover:to-purple-50 hover:border-pink-300'
+                              }`}
+                            >
+                              {pageNum}
+                            </button>
+                          )
+                        })}
+
+                        <button
+                          onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                          disabled={page === totalPages}
+                          className="px-4 py-2 border-2 border-gray-200 rounded-xl text-sm font-semibold hover:bg-gradient-to-r hover:from-pink-50 hover:to-purple-50 hover:border-pink-300 transition-all disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-white shadow-soft"
+                        >
+                          →
+                        </button>
+                      </div>
+                    )}
+                  </>
+                )}
+              </>
+            )}
+          </div>
+
+          {/* Right Sidebar */}
+          <div className="lg:col-span-3">
+            <RightSidebar />
           </div>
         </div>
-      </section>
-
-      {/* Categories Section */}
-      <section className="py-16 px-4 bg-gray-50">
-        <div className="container mx-auto">
-          <h2 className="text-3xl font-bold text-center mb-10">
-            Choose Your <span className="text-pink-600">Category</span>
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            <CategoryCard
-              title="Escorts"
-              count={780}
-              icon="👗"
-              href="/escorts"
-              color="from-pink-500 to-rose-500"
-            />
-            <CategoryCard
-              title="Trans"
-              count={156}
-              icon="💃"
-              href="/trans"
-              color="from-purple-500 to-pink-500"
-            />
-            <CategoryCard
-              title="New Girls"
-              count={89}
-              icon="✨"
-              href="/new-girls"
-              color="from-blue-500 to-purple-500"
-            />
-            <CategoryCard
-              title="VIP Models"
-              count={127}
-              icon="👑"
-              href="/vip"
-              color="from-yellow-500 to-orange-500"
-            />
-          </div>
-        </div>
-      </section>
-
-      {/* Featured Profiles */}
-      <FeaturedProfiles />
-
-      {/* Popular Locations */}
-      <section className="py-16 px-4">
-        <div className="container mx-auto">
-          <h2 className="text-3xl font-bold text-center mb-10">
-            Popular <span className="text-pink-600">Locations</span>
-          </h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
-            {[
-              { name: 'Zurich', count: 160 },
-              { name: 'Geneva', count: 282 },
-              { name: 'Basel', count: 78 },
-              { name: 'Bern', count: 130 },
-              { name: 'Lausanne', count: 283 },
-              { name: 'Lucerne', count: 58 },
-              { name: 'St. Gallen', count: 18 },
-            ].map((location) => (
-              <Link
-                key={location.name}
-                href={`/search?city=${location.name}`}
-                className="bg-white rounded-lg p-4 shadow-md hover:shadow-xl transition-all hover:-translate-y-1 text-center group"
-              >
-                <MapPin className="w-8 h-8 mx-auto mb-2 text-pink-500 group-hover:text-pink-600" />
-                <h3 className="font-semibold text-gray-800">{location.name}</h3>
-                <p className="text-sm text-gray-500">{location.count} models</p>
-              </Link>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Stats Section */}
-      <StatsSection />
-
-      {/* CTA Section */}
-      <section className="bg-gradient-to-r from-pink-600 to-purple-600 text-white py-16 px-4">
-        <div className="container mx-auto text-center">
-          <h2 className="text-4xl font-bold mb-4">Ready to Get Started?</h2>
-          <p className="text-xl mb-8 text-gray-100">
-            Join thousands of satisfied clients and find your perfect companion today.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link
-              href="/search"
-              className="bg-white text-pink-600 px-8 py-3 rounded-full font-semibold hover:bg-gray-100 transition inline-flex items-center justify-center"
-            >
-              <Search className="w-5 h-5 mr-2" />
-              Browse Models
-            </Link>
-            <Link
-              href="/register"
-              className="bg-transparent border-2 border-white text-white px-8 py-3 rounded-full font-semibold hover:bg-white hover:text-pink-600 transition"
-          >
-              Register as Model
-            </Link>
-          </div>
-        </div>
-      </section>
+      </div>
     </div>
   )
 }
